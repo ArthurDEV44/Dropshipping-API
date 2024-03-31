@@ -1,0 +1,37 @@
+{
+  "name": "api-dropshipping",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start-server": "ts-node ./api/main.ts",
+    "start": "concurrently \"npm run start-server\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@fastify/redis": "^6.1.1",
+    "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/pg": "^8.11.4",
+    "bcrypt": "^5.1.1",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "fastify": "^4.26.2",
+    "fastify-caching": "^6.3.0",
+    "fastify-redis": "^4.4.0",
+    "fastify-swagger": "^5.2.0",
+    "ioredis": "^5.3.2",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.9.13",
+    "pg": "^8.11.3",
+    "stripe": "^14.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.2",
+    "concurrently": "^8.2.2",
+    "ts-node": "^10.9.2"
+  }
+}
