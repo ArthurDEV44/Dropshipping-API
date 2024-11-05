@@ -15,9 +15,12 @@ server.register(fastifyRedis, {
 
 const start = async () => {
     try {
-        await server.listen({ port: 8080 });
+        // Conversion explicite du port en number
+        await server.listen({ port: Number(process.env.PORT) || 3000 });
+        
         // Utilisez une assertion de type pour traiter server.server.address() comme AddressInfo
         const address = server.server.address() as AddressInfo;
+        
         // Vérifiez si address est un string (écoute sur un pipe/socket) ou un objet (TCP)
         const port = typeof address === 'string' ? address : address?.port;
         console.log(`Server listening on ${port}`);

@@ -1,78 +1,72 @@
-import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import ProduitService from './produit_services';
+import { PrismaClient } from '@prisma/client';
+import { FastifyInstance } from 'fastify';
 
-export default class ProduitController {
-    private produitService: ProduitService;
+export default class ProduitService {
+  private fastify: FastifyInstance;
+  private prisma: PrismaClient;
 
-    constructor(fastify: FastifyInstance) {
-        this.produitService = new ProduitService(fastify);
+  constructor(fastify: FastifyInstance) {
+    this.fastify = fastify;
+    this.prisma = new PrismaClient();
+  }
+
+  async listAll(page: number, limit: number) {
+    const cacheKey = `produits:page:${page}:limit:${limit}`;
+    const cached = await this.fastify.redis.get(cacheKey);
+  
+    if (cached) {
+      return JSON.parse(cached);
     }
+  
+    const offset = (page - 1) * limit;
+    const produits = await this.prisma.produit.findMany({
+      skip: offset,
+      take: limit,
+      orderBy: {
+        date_creation: 'desc',
+      },
+    });
 
-    public async listAll(request: FastifyRequest, reply: FastifyReply) {
-        try {
-            const query = request.query as { page: string; limit: string };
-            const page = parseInt(query.page) || 1;
-            const limit = parseInt(query.limit) || 10;
-    
-            const produits = await this.produitService.listAll(page, limit);
-            reply.send(produits);
-        } catch (error) {
-            reply.status(500).send({ error: 'Erreur lors de la récupération des produits' });
-        }
-    }    
-    
+    await this.fastify.redis.setex(cacheKey, 60 * 60, JSON.stringify(produits)); // Cache pour 1 heure
+    return produits;
+  }
+  
+  async addProduit(nom: string, description: string, prix: number, quantiteEnStock: number) {
+    const produit = await this.prisma.produit.create({
+      data: {
+        nom,
+        description,
+        prix,
+        quantiteEnStock,
+      },
+    });
+    return produit;
+  }
 
-    public async addProduit(request: FastifyRequest, reply: FastifyReply) {
-        try {
-            const { nom, description, prix, quantite_en_stock } = request.body as any;
-            const produit = await this.produitService.addProduit(nom, description, prix, quantite_en_stock);
-            reply.status(201).send(produit);
-        } catch (error) {
-            reply.status(500).send({ error: 'Erreur lors de l\'ajout du produit' });
-            console.error("Une erreur est survenue: ", error);
-        }
-    }
+  async updateProduit(id: number, nom: string, description: string, prix: number, quantiteEnStock: number) {
+    const produit = await this.prisma.produit.update({
+      where: { id },
+      data: {
+        nom,
+        description,
+        prix,
+        quantiteEnStock,
+      },
+    });
+    return produit;
+  }
 
-    public async updateProduit(request: FastifyRequest, reply: FastifyReply) {
-        try {
-            const { id } = request.params as any;
-            const { nom, description, prix, quantite_en_stock } = request.body as any;
-            const produit = await this.produitService.updateProduit(id, nom, description, prix, quantite_en_stock);
-            if (produit) {
-                reply.send(produit);
-            } else {
-                reply.status(404).send({ error: 'Produit non trouvé' });
-            }
-        } catch (error) {
-            reply.status(500).send({ error: 'Erreur lors de la mise à jour du produit' });
-        }
-    }
+  async deleteProduit(id: number) {
+    const produit = await this.prisma.produit.delete({
+      where: { id },
+    });
+    return produit;
+  }
 
-    public async deleteProduit(request: FastifyRequest, reply: FastifyReply) {
-        try {
-            const { id } = request.params as any;
-            const produit = await this.produitService.deleteProduit(id);
-            if (produit) {
-                reply.send({ message: 'Produit supprimé' });
-            } else {
-                reply.status(404).send({ error: 'Produit non trouvé' });
-            }
-        } catch (error) {
-            reply.status(500).send({ error: 'Erreur lors de la suppression du produit' });
-        }
-    }
-
-    public async getProduitById(request: FastifyRequest, reply: FastifyReply) {
-        try {
-            const { id } = request.params as any;
-            const produit = await this.produitService.getProduitById(id);
-            if (produit) {
-                reply.send(produit);
-            } else {
-                reply.status(404).send({ error: 'Produit non trouvé' });
-            }
-        } catch (error) {
-            reply.status(500).send({ error: 'Erreur lors de la récupération du produit' });
-        }
-    }
+  async getProduitById(id: number) {
+    const produit = await this.prisma.produit.findUnique({
+      where: { id },
+    });
+    return produit;
+  }
 }
